@@ -24,84 +24,91 @@ struct Home: View {
     @ObservedObject var data = getData()
     var body: some View{
         VStack{
-            HStack(alignment:.top){
-                VStack(alignment: .leading, spacing: 15){
-                    Text("Date")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                    
-                    Text("Covid -19 Cases")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                    
-                    Text("361,635")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
+            if self.data.data != nil{
+                HStack(alignment:.top){
+                    VStack(alignment: .leading, spacing: 15){
+                        Text(getDatetime())
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        Text("Covid -19 Indonesia")
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        Text(getValue(data: data.data.confirmed))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    Button(action:{
+                        
+                    }){
+                        Image(systemName: "arrow.clockwise")
+                            .font(.title)
+                            .foregroundColor(.white)
+                    }
                 }
-                Spacer()
-                Button(action:{
-                    
-                }){
-                    Image(systemName: "arrow.clockwise")
-                        .font(.title)
-                        .foregroundColor(.white)
+                .padding(.top, (UIApplication.shared.windows.first?.safeAreaInsets.top)! + 18)
+                .padding()
+                    .padding(.bottom, 80)
+                .background(Color.red)
+                HStack(alignment: .center, spacing: 15 ){
+                    VStack(alignment: .leading, spacing: 15){
+                        Text("Deaths")
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color.black.opacity(0.5))
+                        Text(getValue(data: data.data.deaths))
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.red)
+                    }.padding(.horizontal, 20)
+                        .padding(.vertical,  30)
+                        .background(Color.white)
+                    .cornerRadius(12)
+                    VStack(alignment: .leading, spacing: 15){
+                        Text("Recovered")
+                            .foregroundColor(Color.black.opacity(0.5))
+                        Text(getValue(data: data.data.recovered))
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                    }.padding(.horizontal)
+                        .padding(.vertical,  30)
+                        .background(Color.white)
+                    .cornerRadius(12)
                 }
-            }
-            .padding(.top, (UIApplication.shared.windows.first?.safeAreaInsets.top)! + 18)
-            .padding()
-                .padding(.bottom, 80)
-            .background(Color.red)
-            HStack(alignment: .center, spacing: 15 ){
+                .offset(y: -70)
+                .padding(.bottom, -60)
+                .zIndex(25)
                 VStack(alignment: .leading, spacing: 15){
-                    Text("Deaths")
+                    Text("Active Case")
                         .fontWeight(.semibold)
                         .foregroundColor(Color.black.opacity(0.5))
-                    Text("cjnsodc")
+                                      
+                    Text(getValue(data: data.data.activeCare))
                         .font(.title)
                         .fontWeight(.bold)
-                        .foregroundColor(.red)
+                        .foregroundColor(.yellow)
                 }.padding(.horizontal)
-                    .padding(.vertical,  30)
+                    .padding(.vertical,30)
                     .background(Color.white)
-                .cornerRadius(12)
-                VStack(alignment: .leading, spacing: 15){
-                    Text("Recovered")
-                        .foregroundColor(Color.black.opacity(0.5))
-                    Text("3655")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                }.padding(.horizontal)
-                    .padding(.vertical,  30)
-                    .background(Color.white)
-                .cornerRadius(12)
-            }
-            .offset(y: -70)
-            .padding(.bottom, -60)
-            .zIndex(25)
-            VStack(alignment: .leading, spacing: 15){
-                Text("Active Case")
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.black.opacity(0.5))
-                                  
-                Text("3655")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.yellow)
-            }.padding(.horizontal)
-                .padding(.vertical,30)
-                .background(Color.white)
-                .cornerRadius(12)
+                    .cornerRadius(12)
+                    .padding(.top, 15)
+                
+                ScrollView(.horizontal, showsIndicators: false){
+                    HStack(spacing: 15){
+                        ForEach(1...15,id:\.self){i in
+                            cellView()
+                        }
+                    }
+                }
                 .padding(.top, 15)
-            
-            ScrollView(.horizontal, showsIndicators: false){
-                HStack(spacing: 15){
-                    ForEach(1...15,id:\.self){i in
-                        cellView()
+            }else{
+                GeometryReader{_ in
+                    VStack{
+                        Indicator()
                     }
                 }
             }
-            .padding(.top, 15)
+            
         }.edgesIgnoringSafeArea(.top)
             .background(Color.black.opacity(0.1).edgesIgnoringSafeArea(.all))
     }
@@ -152,28 +159,56 @@ struct cellView: View {
 }
 
 struct Response: Decodable {
-    var confirmed: Confirmed
-    var recovered: Recovered
-    var deaths: Deaths
-    var activeCare: ActiveCare
+    var confirmed: Int = 0
+    var recovered: Int = 0
+    var deaths: Int = 0
+    var activeCare: Int = 0
+    
+    private enum  ResponseKeys : String, CodingKey{
+        case confirmed
+        case recovered
+        case deaths
+        case activeCare
+    }
+    private enum ConfirmedKey: String, CodingKey{
+        case value
+    }
+    private enum RecoveredKey: String, CodingKey{
+        case value
+    }
+    private enum DeathsKey: String, CodingKey{
+        case value
+    }
+    private enum ActiveCareKey: String, CodingKey{
+        case value
+    }
+    
+    init(from decoder: Decoder) throws {
+        if let responseContainer = try? decoder.container(keyedBy: ResponseKeys.self){
+            if let mainContainer = try? responseContainer.nestedContainer(keyedBy: ConfirmedKey.self, forKey: .confirmed){
+                self.confirmed = try mainContainer.decode(Int.self, forKey:.value)
+            }
+            
+            if let mainContainer = try? responseContainer.nestedContainer(keyedBy: RecoveredKey.self, forKey: .recovered){
+            self.recovered = try mainContainer.decode(Int.self, forKey:.value)
+                       }
+            if let mainContainer = try? responseContainer.nestedContainer(keyedBy: DeathsKey.self, forKey: .deaths){
+                self.deaths = try mainContainer.decode(Int.self, forKey:.value)
+            }
+            if let mainContainer = try? responseContainer.nestedContainer(keyedBy: ActiveCareKey.self, forKey: .activeCare){
+                self.activeCare = try mainContainer.decode(Int.self, forKey:.value)
+            }
+            
+            
+            
+        }
+    }
 }
 
-struct Confirmed:Decodable {
-    var value: Int
-}
-struct Recovered:Decodable {
-    var value : Int
-}
 
-struct Deaths:Decodable {
-    var value: Int
-}
-struct ActiveCare:Decodable{
-    var value: Int
-}
 
 class getData: ObservableObject {
-    @Published var data: Response!
+    @Published var data : Response!
     
     init() {
         updateData()
@@ -198,5 +233,25 @@ class getData: ObservableObject {
             }
            
         }.resume()
+    }
+}
+func getValue(data: Int) -> String {
+    return String(data)
+}
+
+func getDatetime() -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "HH:mm E, d MMM y"
+    return formatter.string(from: Date())
+}
+
+struct Indicator: UIViewRepresentable {
+    func makeUIView(context: UIViewRepresentableContext<Indicator>) -> UIActivityIndicatorView {
+        let view = UIActivityIndicatorView(style: .large)
+        view.startAnimating()
+        return view
+    }
+    func updateUIView(_ uiView: UIActivityIndicatorView, context: UIViewRepresentableContext<Indicator>) {
+        
     }
 }
