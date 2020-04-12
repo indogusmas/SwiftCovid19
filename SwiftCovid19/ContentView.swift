@@ -21,6 +21,7 @@ struct ContentView_Previews: PreviewProvider {
 }
 
 struct Home: View {
+    @ObservedObject var data = getData()
     var body: some View{
         VStack{
             HStack(alignment:.top){
@@ -55,8 +56,7 @@ struct Home: View {
                     Text("Deaths")
                         .fontWeight(.semibold)
                         .foregroundColor(Color.black.opacity(0.5))
-                                      
-                    Text("3655")
+                    Text("cjnsodc")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.red)
@@ -67,7 +67,6 @@ struct Home: View {
                 VStack(alignment: .leading, spacing: 15){
                     Text("Recovered")
                         .foregroundColor(Color.black.opacity(0.5))
-                                      
                     Text("3655")
                         .font(.title)
                         .fontWeight(.bold)
@@ -97,10 +96,107 @@ struct Home: View {
             
             ScrollView(.horizontal, showsIndicators: false){
                 HStack(spacing: 15){
-                    ForEach(1...15)
+                    ForEach(1...15,id:\.self){i in
+                        cellView()
+                    }
                 }
             }
+            .padding(.top, 15)
         }.edgesIgnoringSafeArea(.top)
             .background(Color.black.opacity(0.1).edgesIgnoringSafeArea(.all))
+    }
+}
+
+struct cellView: View {
+    var body: some View{
+        VStack(alignment: .leading, spacing: 15){
+            Text("USA")
+                .fontWeight(.bold)
+            
+            HStack(spacing: 15){
+                VStack(alignment: .leading, spacing: 15){
+                    Text("Active Cases")
+                        .font(.title)
+                    Text("221,333")
+                        .font(.title)
+                }
+                VStack(){
+                VStack(alignment: .leading, spacing: 15){
+                    Text("Deaths")
+                        .font(.title)
+                    Text("221")
+                        .foregroundColor(.red)
+                }
+                Divider()
+                VStack(alignment: .leading, spacing: 15){
+                    Text("Recovered")
+                        .font(.title)
+                    Text("221")
+                        .foregroundColor(.green)
+                }
+                Divider()
+                VStack(alignment: .leading, spacing: 15){
+                    Text("Criitcal")
+                        .font(.title)
+                    Text("221")
+                        .foregroundColor(.yellow)
+                }
+            }
+            }
+        }
+    .padding()
+        .frame(width: UIScreen.main.bounds.width - 30)
+        .background(Color.white)
+    .cornerRadius(20)
+    }
+}
+
+struct Response: Decodable {
+    var confirmed: Confirmed
+    var recovered: Recovered
+    var deaths: Deaths
+    var activeCare: ActiveCare
+}
+
+struct Confirmed:Decodable {
+    var value: Int
+}
+struct Recovered:Decodable {
+    var value : Int
+}
+
+struct Deaths:Decodable {
+    var value: Int
+}
+struct ActiveCare:Decodable{
+    var value: Int
+}
+
+class getData: ObservableObject {
+    @Published var data: Response!
+    
+    init() {
+        updateData()
+    }
+    func updateData()  {
+        let url = "https://kawalcovid19.harippe.id/api/summary"
+        let session = URLSession(configuration: .default)
+        session.dataTask(with: URL(string: url)!){(data,_,Error) in
+            
+            if Error != nil{
+                print((Error?.localizedDescription)!)
+                return
+            }
+            do{
+            let json = try JSONDecoder().decode(Response.self, from: data!)
+            print(json)
+            DispatchQueue.main.async {
+                        self.data = json
+                    }
+            }catch let jsonError{
+                print("Error", jsonError)
+            }
+           
+        }.resume()
     }
 }
