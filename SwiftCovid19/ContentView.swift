@@ -5,7 +5,6 @@
 //  Created by indo gusmas arung samudra on 06/04/20.
 //  Copyright © 2020 indo gusmas arung samudra. All rights reserved.
 //
-
 import SwiftUI
 
 struct ContentView: View {
@@ -95,7 +94,7 @@ struct Home: View {
                 
                 ScrollView(.horizontal, showsIndicators: false){
                     HStack(spacing: 15){
-                        ForEach(1...15,id:\.self){i in
+                        ForEach(data.provinsiList,id:\.self){i in
                             cellView()
                         }
                     }
@@ -209,13 +208,16 @@ struct Response: Decodable {
 
 class getData: ObservableObject {
     @Published var data : Response!
-    
+    @Published var  provinsiList: [WelcomeElement]!
     init() {
         updateData()
     }
     func updateData()  {
         let url = "https://kawalcovid19.harippe.id/api/summary"
+        let urlProvinsi = "https://api.kawalcorona.com/indonesia/provinsi/"
         let session = URLSession(configuration: .default)
+         let sessionProvinsi = URLSession(configuration: .default)
+        
         session.dataTask(with: URL(string: url)!){(data,_,Error) in
             
             if Error != nil{
@@ -233,6 +235,23 @@ class getData: ObservableObject {
             }
            
         }.resume()
+        
+        sessionProvinsi.dataTask(with: URL(string: urlProvinsi)!){(data,_,Error) in
+            
+            if Error != nil{
+                print((Error?.localizedDescription)!)
+            }
+            do{
+             let json = try JSONDecoder().decode([WelcomeElement].self, from: data!)
+             DispatchQueue.main.async {
+                 self.provinsiList = json
+             }
+            print(json)
+            }catch let jsonError{
+                print("Json Error", jsonError)
+            }
+        }.resume()
+        
     }
 }
 func getValue(data: Int) -> String {
@@ -253,5 +272,24 @@ struct Indicator: UIViewRepresentable {
     }
     func updateUIView(_ uiView: UIActivityIndicatorView, context: UIViewRepresentableContext<Indicator>) {
         
+    }
+}
+struct WelcomeElement: Codable {
+    var attributes: Attributes
+}
+
+
+struct Attributes: Codable {
+    var fid, kodeProvi: Int
+    var provinsi: String
+    var kasusPosi, kasusSemb, kasusMeni: Int
+
+    enum CodingKeys: String, CodingKey {
+        case fid = "FID"
+        case kodeProvi = "Kode_Provi"
+        case provinsi = "Provinsi"
+        case kasusPosi = "Kasus_Posi"
+        case kasusSemb = "Kasus_Semb"
+        case kasusMeni = "Kasus_Meni"
     }
 }
